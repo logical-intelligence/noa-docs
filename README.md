@@ -82,14 +82,7 @@ The second way of sourcing a GitHub token is asking the code assistant to pass i
 - MCP server options:
   - `Server name`: `noa-mcp`
   - `Transport Type`: HTTP
-  - `Server URL`:
-  - If you’d like to use your custom GitHub token, provide it via `Secrets -> Add a new secret`:
-    - `Secret Name`: `GITHUB_TOKEN`
-    - `Secret Value`: `gh_...`
-    - Click on `Save secret`
-    - Expand `Custom Headers (optional)`
-    - `Header name`: `x-github-token`
-    - `Header value`: `$GITHUB_TOKEN`
+  - `Server URL`: https://api.noa.logicalintelligence.com/api/mcp
   - Click on `Enable`
 
 # Using Noa from a Devin session using Devin's GitHub token
