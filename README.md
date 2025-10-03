@@ -4,6 +4,11 @@ We’re currently providing only MCP Server API (alpha version). This API endpoi
 
 For using Noa via API, you need to provide a GitHub token.
 
+> [!NOTE]
+> Noa MCP API is alpha version currently. Please expect slow run-times. Audits can take up to several hours.
+
+This 
+
 # Provided tools
 
 ## `start_repo_audit`
