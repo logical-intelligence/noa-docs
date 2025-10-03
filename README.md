@@ -1,17 +1,8 @@
-# Noa is our bug search agent
+# Noa API documentation
 
 We’re currently providing only MCP Server API (alpha version). This API endpoint can be plugged into AI code assistants, or invoked via HTTP directly.
 
 For using Noa via API, you need to provide a GitHub token.
-
-### GitHub token
-
-The first way is to issue a GitHub token directly via GitHub. These tokens can be scoped to particular repos. Noa needs repo_read permissions. Here are up-to-date links for issuing a GitHub token (also known as personal access tokens):
-- Documentation: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
-- Direct link for issuing a new token: https://github.com/settings/personal-access-tokens/new
-- Direct link for listing issued tokens and revoking issued tokens if needed: https://github.com/settings/tokens
-
-The second way of sourcing a GitHub token is asking the code assistant to pass its own GitHub token to the Noa tools.
 
 # Provided tools
 
@@ -75,6 +66,15 @@ List audit jobs for a GitHub repository.
 | `repo`        | string | GitHub repository name. |
 | `jobs`        | array  | List of audit job summaries. Each entry includes `jobId`, `status`, `ref`, `createdAt`, and optionally `completedAt`, `analysisResultId`, and `errorMessage`. |
 
+# GitHub token
+
+The first way is to issue a GitHub token directly via GitHub. These tokens can be scoped to particular repos. Noa needs repo_read permissions. Here are up-to-date links for issuing a GitHub token (also known as personal access tokens):
+- Documentation: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens
+- Direct link for issuing a new token: https://github.com/settings/personal-access-tokens/new
+- Direct link for listing issued tokens and revoking issued tokens if needed: https://github.com/settings/tokens
+
+The second way of sourcing a GitHub token is asking the code assistant to pass its own GitHub token to the Noa tools.
+
 # Configuring Noa for Devin
 
 - Go to MCP Marketplace page: https://app.devin.ai/settings/mcp-marketplace and click on “Add Your Own” (or directly go to https://app.devin.ai/settings/mcp-marketplace/setup/custom )
@@ -104,11 +104,10 @@ All MCP HTTP calls go to `https://api.noa.logicalintelligence.com/api/mcp`. Each
 ### 1. Start an audit
 
 ```bash
-BASE_URL="https://api.noa.logicalintelligence.com/api"
 GITHUB_TOKEN="ghp_yourgithubtoken"
 
 curl -sS \
-  -X POST "$BASE_URL/mcp" \
+  -X POST "https://api.noa.logicalintelligence.com/api/mcp" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   --data '{
@@ -118,13 +117,17 @@ curl -sS \
     "params": {
       "name": "start_repo_audit",
       "arguments": {
-        "owner": "logicalintelligence",
-        "repo": "noa",
+        "owner": "logical-intelligence",
+        "repo": "noa-docs",
         "ref": "main",
         "githubToken": "'"${GITHUB_TOKEN}"'"
       }
     }
   }'
+
+# Example output:
+# event: message
+# data: {"result":{"structuredContent":{"auditJobId":"...","owner":"logical-intelligence","repo":"noa-docs","ref":"main"},"content":[{"type":"text","text":"Started repository audit for logical-intelligence/noa-docs@main.\nJob ID: ...\nTrack progress with `get_repo_audit` using this job ID."}]},"jsonrpc":"2.0","id":1}
 
 # Copy the structuredContent.auditJobId from the response body for later requests.
 ```
@@ -139,7 +142,7 @@ Use the `AUDIT_JOB_ID` copied from the previous step (replace the placeholder be
 AUDIT_JOB_ID="replace-with-audit-job-id"
 
 curl -sS \
-  -X POST "$BASE_URL/mcp" \
+  -X POST "https://api.noa.logicalintelligence.com/api/mcp" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   --data '{
@@ -153,6 +156,14 @@ curl -sS \
       }
     }
   }'
+
+# Example output:
+# event: message
+# data: {"result":{"structuredContent":{"auditJobId":"...","status":"running"},"content":[{"type":"text","text":"Audit job ...\nStatus: RUNNING\n\nThe audit is still processing. Re-run this tool to refresh the status."}]},"jsonrpc":"2.0","id":2}
+
+#event: message
+#data: {"result":{"structuredContent":{"auditJobId":"...","status":"completed","analysis":"..."},"content":"..."},"jsonrpc":"2.0","id":2}
+
 ```
 
 The response reports the currently known status and (when complete) the audit summary.
@@ -161,7 +172,7 @@ The response reports the currently known status and (when complete) the audit su
 
 ```bash
 curl -sS \
-  -X POST "$BASE_URL/mcp" \
+  -X POST "https://api.noa.logicalintelligence.com/api/mcp" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   --data '{
@@ -171,8 +182,8 @@ curl -sS \
     "params": {
       "name": "list_repo_audits",
       "arguments": {
-        "owner": "logicalintelligence",
-        "repo": "noa",
+        "owner": "logical-intelligence",
+        "repo": "noa-docs",
         "githubToken": "'"${GITHUB_TOKEN}"'"
       }
     }
