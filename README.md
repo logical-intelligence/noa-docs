@@ -17,49 +17,63 @@ The second way of sourcing a GitHub token is asking the code assistant to pass i
 
 ## `start_repo_audit`
 
-Enqueue audit of a GitHub repository with optional branch/ref and github token for private repos.
+Launch a security audit for a GitHub repository ref. Requires owner, repo, ref, and a GitHub token with repo access.
 
 ### Arguments
 
-| Parameter| type  | required | description|
-| -------- |-------|----------|------------|
-| `owner`  |string |required|github repo owner|
-| `repo`   |string |required|github repo name|
-| `ref`    |string |required|github repo ref|
-| `githubToken`| string |required|github token|
+| Parameter | type   | required | description |
+| --------- | ------ | -------- | ----------- |
+| `owner`   | string | required | GitHub repository owner (user or organization). |
+| `repo`    | string | required | GitHub repository name. |
+| `ref`     | string | required | Git reference (branch, tag, or commit SHA). |
+| `githubToken` | string | required | GitHub personal access token with `repo` scope. |
 
 ### Output schema
 
-| Return value| type  | description|
-| -------- |-------|------------|
-| `jobAuditId`|string |job audit id|
-| `owner`  |string |github repo owner|
-| `repo`   |string |github repo name|
-| `ref`    |string |github repo ref|
+| Return value | type   | description |
+| ------------- | ------ | ----------- |
+| `auditJobId`  | string | Audit job UUID. |
+| `owner`       | string | GitHub repository owner. |
+| `repo`        | string | GitHub repository name. |
+| `ref`         | string | Git reference audited. |
 
 
-## `poll_repo_audit_result`
+## `get_repo_audit`
 
-Fetch audit results.
+Retrieve the latest status and results for a previously started repository audit job.
 
 ### Arguments
 
-| Return value| type  | description|
-| -------- |-------|------------|
-| `jobAuditId`|string |job audit id|
+| Parameter | type   | required | description |
+| --------- | ------ | -------- | ----------- |
+| `auditJobId` | string | required | Audit job UUID returned from `start_repo_audit`. |
 
 ### Output schema
+
+| Return value | type   | description |
+| ------------- | ------ | ----------- |
+| `auditJobId`  | string | Audit job UUID. |
+| `status`      | string | Current audit status (`pending`, `running`, `completed`, `failed`, or `interrupted`). |
+| `analysis`    | string | Final audit summary (present when status is `completed`). |
+| `errorMessage` | string | Failure details (present when status is `failed` or `interrupted`). |
 
 ## `list_repo_audits`
 
 List audit jobs for a GitHub repository. 
 
-| Parameter| type  | required | description|
-| -------- |-------|----------|------------|
-| `owner`  |string |required|github repo owner|
-| `repo`   |string |required|github repo name|
+| Parameter | type   | required | description |
+| --------- | ------ | -------- | ----------- |
+| `owner`   | string | required | GitHub repository owner. |
+| `repo`    | string | required | GitHub repository name. |
+| `githubToken` | string | required | GitHub personal access token with `repo` scope. |
 
 ### Output schema
+
+| Return value | type   | description |
+| ------------- | ------ | ----------- |
+| `owner`       | string | GitHub repository owner. |
+| `repo`        | string | GitHub repository name. |
+| `jobs`        | array  | List of audit job summaries. Each entry includes `jobId`, `status`, `ref`, `createdAt`, and optionally `completedAt`, `analysisResultId`, and `errorMessage`. |
 
 # Configuring Noa for Devin
 
@@ -81,15 +95,89 @@ List audit jobs for a GitHub repository.
 # Using Noa from a Devin session using Devin's GitHub token
 - Start a new Devin session
 - Adjust the repo and branch, and try the prompt `Use noa-mcp MCP server, invoke tool "start_repo_audit" using the Devin's GitHub token for repo "noa" and branch "main". Do not analyze the repo contents for invoking the prompt.`
-- It will automatically poll for audit results
-“”
+- Re-run `get_repo_audit` with the returned `auditJobId` to track progress or collect the final summary.
 
-# Using Noa via HTTP:
+# Using Noa via HTTP
 
-- Check that API is online and responds:
+All MCP HTTP calls go to `https://api.noa.logicalintelligence.com/api/mcp`. Each call is stateless—send one JSON-RPC payload per request.
 
-- Check that your GitHub token is suitable and has access to the requested repo:
+### 1. Start an audit
 
-- Launch audit:
-  - `curl -i -X POST https://$VERCEL_BASEURL/api/mcp -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" -d '{ "jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name" : "log_headers", "arguments" : {}} }'`
+```bash
+BASE_URL="https://api.noa.logicalintelligence.com/api"
+GITHUB_TOKEN="ghp_yourgithubtoken"
 
+curl -sS \
+  -X POST "$BASE_URL/mcp" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  --data '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "start_repo_audit",
+      "arguments": {
+        "owner": "logicalintelligence",
+        "repo": "noa",
+        "ref": "main",
+        "githubToken": "'"${GITHUB_TOKEN}"'"
+      }
+    }
+  }'
+
+# Copy the structuredContent.auditJobId from the response body for later requests.
+```
+
+The response body includes the structured job payload (`auditJobId`, `owner`, `repo`, `ref`). Copy the `structuredContent.auditJobId` value for subsequent requests.
+
+### 2. Poll audit status
+
+Use the `AUDIT_JOB_ID` copied from the previous step (replace the placeholder below).
+
+```bash
+AUDIT_JOB_ID="replace-with-audit-job-id"
+
+curl -sS \
+  -X POST "$BASE_URL/mcp" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  --data '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "get_repo_audit",
+      "arguments": {
+        "auditJobId": "'"${AUDIT_JOB_ID}"'"
+      }
+    }
+  }'
+```
+
+The response reports the currently known status and (when complete) the audit summary.
+
+### 3. List recent audits for a repository
+
+```bash
+curl -sS \
+  -X POST "$BASE_URL/mcp" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  --data '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "list_repo_audits",
+      "arguments": {
+        "owner": "logicalintelligence",
+        "repo": "noa",
+        "githubToken": "'"${GITHUB_TOKEN}"'"
+      }
+    }
+  }'
+
+```
+
+Each entry in the returned `jobs` array includes the job ID, status, target ref, timestamps, and any error details.
