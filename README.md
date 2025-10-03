@@ -189,6 +189,10 @@ curl -sS \
     }
   }'
 
+# Example output:
+#event: message
+#data: {"result":{"structuredContent":{"owner":"logical-intelligence","repo":"noa-docs","jobs":[{"jobId":"...","status":"completed","ref":"main","createdAt":"2025-10-03T21:46:47.294Z","completedAt":"2025-10-03T21:58:20.345Z","analysisResultId":44}]},"content":[{"type":"text","text":"logical-intelligence/noa-docs\nTotal audits: 1\n\nJobs:\n1. ✓ COMPLETED - main\n   Job ID: ...\n   Created: 2025-10-03T21:46:47.294Z\n   Completed: 2025-10-03T21:58:20.345Z\n\nUse `get_repo_audit` with a job ID to retrieve detailed status."}]},"jsonrpc":"2.0","id":3}
+
 ```
 
 Each entry in the returned `jobs` array includes the job ID, status, target ref, timestamps, and any error details.
