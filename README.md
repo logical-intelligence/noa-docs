@@ -94,8 +94,10 @@ The second way of sourcing a GitHub token is asking the code assistant to pass i
 
 # Using Noa from a Devin session using Devin's GitHub token
 - Start a new Devin session
-- Adjust the repo and branch, and try the prompt `Use noa-mcp MCP server, invoke tool "start_repo_audit" using the Devin's GitHub token for repo "noa" and branch "main". Do not analyze the repo contents for invoking the prompt.`
-- Re-run `get_repo_audit` with the returned `auditJobId` to track progress or collect the final summary.
+- Adjust the repo and branch, and try the prompt:
+
+  `Use noa-mcp MCP server, invoke tool "start_repo_audit" using the Devin's GitHub token for repo "noa-docs" and branch "main".`
+- If Devin times-out until the audit is completed, you can manually run the tool `get_repo_audit` with the returned `auditJobId` to track progress or collect the final summary.
 
 # Using Noa via HTTP
 
@@ -159,7 +161,7 @@ curl -sS \
 
 # Example output:
 # event: message
-# data: {"result":{"structuredContent":{"auditJobId":"...","status":"running"},"content":[{"type":"text","text":"Audit job ...\nStatus: RUNNING\n\nThe audit is still processing. Re-run this tool to refresh the status."}]},"jsonrpc":"2.0","id":2}
+# data: {"result":{"structuredContent":{"auditJobId":"...","status":"running", ""},"content":[{"type":"text","text":"Audit job ...\nStatus: RUNNING\n\nThe audit is still processing. Re-run this tool to refresh the status."}]},"jsonrpc":"2.0","id":2}
 
 #event: message
 #data: {"result":{"structuredContent":{"auditJobId":"...","status":"completed","analysis":"..."},"content":"..."},"jsonrpc":"2.0","id":2}
